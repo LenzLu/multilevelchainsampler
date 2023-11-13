@@ -1,6 +1,4 @@
-include("../../ChainSamplers/all.jl")
-include("../../NetworkEnsembles/all.jl")
-
+include("../../src/all.jl")
 
 using Distributions
 using Plots
