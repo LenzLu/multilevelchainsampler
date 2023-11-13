@@ -1,5 +1,0 @@
-include("abstract.jl")
-include("gridsampler.jl")
-include("dynamics.jl")
-#include("display_gplots.jl")
-include("stability.jl")
