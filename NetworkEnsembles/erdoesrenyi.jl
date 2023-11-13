@@ -15,12 +15,19 @@ function initialize(S::ErdoesRenyiSampler)
 end
 
 function propose!(S::ErdoesRenyiSampler, G::Graph)
-    u,v = choose_node_pair(G)
-    if has_edge(G, u, v)
-        rem_edge!(G, u, v)
-    else
-        if rand() < S.p
-            add_edge!(G, u,v)
+    finished = false
+    while !finished
+        u,v = choose_node_pair(G)
+        if has_edge(G, u, v)
+            rem_edge!(G, u, v)
+        else
+            if rand() < S.p
+                if add_edge!(G, u,v)
+                    if is_connected(G)
+                        finished = true
+                    end
+                end
+            end
         end
     end
 end
