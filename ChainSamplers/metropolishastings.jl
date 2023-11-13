@@ -99,8 +99,8 @@ function sample_chain(
         subchain = sample_chain(subsampler, x0=x, return_probabilities=true)
         y = subchain[1][end]
         a,b = subchain[3], subchain[4]
-        q_xy = prod( a./b )
-        q_yx = prod( b./a )
+        q_xy = min(1, prod( min.(1, a./b) ))
+        q_yx = min(1, prod( min.(1, b./a) ))
 
         # evaluate energy
         Ey = s.energy(y)

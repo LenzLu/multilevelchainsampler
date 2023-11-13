@@ -1,23 +1,5 @@
 include("abstract.jl")
-
-struct EnergyHistogram
-    min::Real
-    max::Real
-    N::Integer
-end
-
-function midpoints(h::EnergyHistogram)
-    s = ( h.max - h.min ) / h.N
-    m = [h.min+s/2:s:h.max-s/2 ... ]
-    return m
-end
-
-function which_bin(h::EnergyHistogram, x::Real)
-    x = max(h.min, min(h.max, x)) # clamp to bounds
-    n = floor((h.N-1) * (x - h.min)/(h.max - h.min))
-    n = convert(Integer,n) + 1
-    return n
-end
+include("histutils.jl")
 
 function is_flat(H::Vector, tol=0.95)
     minimum(H) >= tol * mean(H)
