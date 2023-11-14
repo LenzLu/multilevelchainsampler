@@ -1,10 +1,9 @@
 include("abstract.jl")
 include("histutils.jl")
 
-function is_flat(H::Vector, tol=0.95)
-    minimum(H) >= tol * mean(H)
+function is_flat(H::Vector, tol=0.95, p=1)
+    minimum(H) ^p >= tol * mean( H .^p )
 end
-
 
 struct WangLandau{T} <: ChainSampler{T}
     energy::Function # Maps T → ℝ
@@ -30,7 +29,6 @@ function sample_chain(
     n = which_bin(h, E[end])
     H[n] += 1; S[n] += f
     N = [n]
-
 
     while f > sampler.flatness
 

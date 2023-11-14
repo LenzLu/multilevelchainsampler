@@ -1,3 +1,5 @@
 include("abstract.jl")
-include("metropolishastings.jl")
-include("wanglandau.jl")
+include("metropolis_hastings.jl")
+include("mh_delayed_acceptance.jl")
+include("mh_multilevel.jl")
+#include("wanglandau.jl")

@@ -37,7 +37,7 @@ end
 
 function solve_system(grid::PowerGrid,  u₀; t_final=10.0, tol=1e-6)
     problem = ODEProblem(swing_dynamics!, u₀, (0.0, t_final), grid)
-    solution = solve(problem, Rodas5P(); abstol=tol, reltol=tol)
+    solution = solve(problem, Rodas5P(); abstol=tol, reltol=tol) #TODO: Tsit schneller
 
     #show_dynamics(solution)
     u = solution.u[end]

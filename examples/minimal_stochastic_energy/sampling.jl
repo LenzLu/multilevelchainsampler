@@ -15,7 +15,7 @@ propose!(R::RandomWalk, d::Dummy) = ( d.x += randn() * R.s; d)
 ## Gaussian target distribution
 
 function energy(d::Dummy) return d.x^2 end
-function energy_surrogate(d::Dummy; c=10.0, n=10, r=rand(n))
+function energy_surrogate(d::Dummy; c=7.5, n=10, r=rand(n))
     z = c.* ( r .- 0.5 )
     return mean( (d.x .- z) .^ 2 )
 end
@@ -85,29 +85,30 @@ end
 run(`clear`); println(repeat("=",80)... )
 println("Minimal Stochastical tests ")
 
-R = RandomWalk(0.01)
+R = RandomWalk(0.1)
 
 chain_length = 10000
 sampler = MetropolisHastings(energy, R, chain_length)
 create_plots(sampler, "Vanilla Metropolis Hastings")
 
 chain_length = 10000
-for n_samples = [50, 100, 500]
-    surrogate = x->energy_surrogate(x; n=n_samples)
-    sampler = DelayedAcceptanceMetropolisHastings(energy, surrogate, R, chain_length)
-    create_plots(sampler, "Vanilla Delayed Acceptance (n=$n_samples)")
-end
-
-for n_samples = [50, 100, 500]
-    chain_length = 10000
-    surrogates = [ x->energy_surrogate(x; n=n_samples) ]
-    surrlengths = [ 10 ]
-    sampler = MultilevelMetropolisHastings(energy, surrogates, R, chain_length, surrlengths)
-    create_plots(sampler, "Two-layer Metropolis Hastings (n=$n_samples)")
-end
+sampler = MetropolisHastings(x->energy_surrogate(x,n=10), R, chain_length)
+create_plots(sampler, "Approximation Metropolis Hastings (n=50)")
 
 chain_length = 10000
-surrogates = [ x->energy_surrogate(x; n=k) for k=[100, 200] ]
-surrlengths = [ 50, 10 ]
+n_samples = 25
+surrogate = x->energy_surrogate(x; n=n_samples)
+sampler = DelayedAcceptanceMetropolisHastings(energy, surrogate, R, chain_length)
+create_plots(sampler, "Vanilla Delayed Acceptance (n=$n_samples)")
+
+chain_length = 10000
+surrogates = [ x->energy_surrogate(x; n=n_samples) ]
+surrlengths = [ 30 ]
+sampler = MultilevelMetropolisHastings(energy, surrogates, R, chain_length, surrlengths)
+create_plots(sampler, "Two-layer Metropolis Hastings (n=$n_samples)")
+
+chain_length = 10000
+surrogates = [ x->energy_surrogate(x; n=k) for k=[25, 50] ]
+surrlengths = [ 30, 10 ]
 sampler = MultilevelMetropolisHastings(energy, surrogates, R, chain_length, surrlengths)
 create_plots(sampler, "Three-layer Metropolis Hastings")

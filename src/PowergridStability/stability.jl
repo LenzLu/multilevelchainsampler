@@ -36,19 +36,7 @@ function stability(grid::PowerGrid; n_sample=10, tol=1e-3, t_final=10., threshol
     u = steady_state(grid)
 
     S = [stability(grid, u, i; n_sample, tol, t_final, threshold) for i=1:N]
+    # TODO: Distributed.pmap, asyncmap, @threads
+
     mean(S)
 end
-
-#===== Test ====================================================================
-run(`clear`)
-N = 20; K = 6.0; α = 0.1
-net = ErdoesRenyiSampler(10, 0.1)
-S = EnergyGridEnsemble(net, K, α)
-grid = rand(S)
-
-#ϕ = zeros(N)
-#ω = zeros(N)
-#u = steady_state(grid)
-s = stability(grid)
-print(s)
-===============================================================================#
