@@ -16,7 +16,7 @@ end
 
 function sample_chain(
     sampler::WangLandau;
-    x0=initialize(sampler.proposal)
+    x0=initialize(sampler.proposal),
     return_entropy=false)
 
     X,E = _init_chain(x0, sampler.energy, sampler.chain_length)
@@ -32,7 +32,7 @@ function sample_chain(
     N = [n]
 
 
-    for i=1:sampler.length-1
+    while f > sampler.flatness
 
         x = X[i]; Ex = E[i] # previous
 

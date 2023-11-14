@@ -15,10 +15,11 @@ propose!(R::RandomWalk, d::Dummy) = ( d.x += randn() * R.s; d)
 ## Gaussian target distribution
 
 function energy(d::Dummy) return d.x^2 end
-function energy_surrogate(d::Dummy; c=1.0, n=1)
-    z = c.* ( rand(n) .- 0.5 )
+function energy_surrogate(d::Dummy; c=10.0, n=10, r=rand(n))
+    z = c.* ( r .- 0.5 )
     return mean( (d.x .- z) .^ 2 )
 end
+
 
 
 using Plots
@@ -28,7 +29,6 @@ function create_plots(sampler::ChainSampler, name::String)
     println("Sampling $name :");
 
     @time chain_X, chain_E = sample_chain(sampler, x0=Dummy(10))
-    print("\n")
 
 
     N = length(chain_X)
@@ -77,8 +77,7 @@ function create_plots(sampler::ChainSampler, name::String)
     )
     savefig(Plots.current(), "$(imgdir)/Target_$(name).png")
     display(Plots.current())
-
-
+    println("\n\n")
 end
 
 # = TEST
@@ -86,32 +85,29 @@ end
 run(`clear`); println(repeat("=",80)... )
 println("Minimal Stochastical tests ")
 
-R = RandomWalk(0.05)
+R = RandomWalk(0.01)
 
 chain_length = 10000
 sampler = MetropolisHastings(energy, R, chain_length)
 create_plots(sampler, "Vanilla Metropolis Hastings")
 
 chain_length = 10000
-surrogates = Function[ x->energy_surrogate(x; n=16) ]
-sampler_TLDA = DelayedAcceptanceMetropolisHastings(energy, Function[energy_surrogate], R, chain_length, [4])
-create_plots(sampler, "Two-level Delayed Acceptance")
+for n_samples = [50, 100, 500]
+    surrogate = x->energy_surrogate(x; n=n_samples)
+    sampler = DelayedAcceptanceMetropolisHastings(energy, surrogate, R, chain_length)
+    create_plots(sampler, "Vanilla Delayed Acceptance (n=$n_samples)")
+end
+
+for n_samples = [50, 100, 500]
+    chain_length = 10000
+    surrogates = [ x->energy_surrogate(x; n=n_samples) ]
+    surrlengths = [ 10 ]
+    sampler = MultilevelMetropolisHastings(energy, surrogates, R, chain_length, surrlengths)
+    create_plots(sampler, "Two-layer Metropolis Hastings (n=$n_samples)")
+end
 
 chain_length = 10000
-surrogates = Function[ x->energy_surrogate(x; n=k) for k = [8,4] ]
-surrlengths = [16,8]
-sampler = DelayedAcceptanceMetropolisHastings(energy, surrogates, R, chain_length, surrlengths)
-create_plots(sampler, "Three-level Delayed Acceptance")
-
-chain_length = 10000
-surrogates = Function[ x->energy_surrogate(x; n=k) for k = [8,4,2] ]
-surrlengths = [16,8,4]
-sampler = DelayedAcceptanceMetropolisHastings(energy, surrogates, R, chain_length, surrlengths)
-create_plots(sampler, "Four-level Delayed Acceptance")
-
-
-
-#chain_length = 10000
-#surrogates = [ x->energy_surrogate(x; n=k) for k = [2,4] ]
-#sampler_MLDA = DelayedAcceptanceMetropolisHastings(energy, surrogates, R, chain_length, surrlengths)
-#create_plots(sampler_MLDA, "Four-level Delayed Acceptance")
+surrogates = [ x->energy_surrogate(x; n=k) for k=[100, 200] ]
+surrlengths = [ 50, 10 ]
+sampler = MultilevelMetropolisHastings(energy, surrogates, R, chain_length, surrlengths)
+create_plots(sampler, "Three-layer Metropolis Hastings")
