@@ -1,8 +1,8 @@
-include("abstract.jl")
-include("metropolis_hastings.jl")
+# include("abstract.jl")
+# include("metropolis_hastings.jl")
 
-#=const=# #TODO
- FunctionIterable = Union{Vector{<:Function}, Tuple{Vararg{Function}}}
+const FunctionIterable = Union{Vector{<:Function}, Tuple{Vararg{Function}}}
+
 struct MultilevelMetropolisHastings{EnergyType,SurrogateType,T} <:
     ChainSampler{T} where {EnergyType<:Function, SurrogateType<:FunctionIterable}
 
@@ -16,8 +16,7 @@ end
 
 function sample_chain(
     s::MultilevelMetropolisHastings;
-    x0=initialize(s.proposal),
-    return_probabilities::Bool = false)
+    x0=initialize(s.proposal))
 
     # Trivial case
     L = length(s.surrogates)

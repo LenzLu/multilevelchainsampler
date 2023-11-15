@@ -1,4 +1,4 @@
-include("abstract.jl")
+# include("abstract.jl")
 
 # Connected erdoes renyi
 struct WattsStrogatzSampler <: NetworkSampler

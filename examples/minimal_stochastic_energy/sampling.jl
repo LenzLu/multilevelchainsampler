@@ -1,5 +1,8 @@
-include("../../src/all.jl")
 using Statistics
+
+using Revise
+using MultilevelChainSampler
+
 
 ## Trivial Generator
 
@@ -9,8 +12,8 @@ end
 struct RandomWalk <: ProposalGenerator{Dummy}
     s::Float64 # Step size
 end
-initialize(R::RandomWalk) = Dummy(randn() * R.s)
-propose!(R::RandomWalk, d::Dummy) = ( d.x += randn() * R.s; d)
+MultilevelChainSampler.initialize(R::RandomWalk) = Dummy(randn() * R.s)
+MultilevelChainSampler.propose!(R::RandomWalk, d::Dummy) = ( d.x += randn() * R.s; d)
 
 ## Gaussian target distribution
 

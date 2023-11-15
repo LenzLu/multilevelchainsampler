@@ -1,5 +1,5 @@
-include("abstract.jl")
-include("metropolis_hastings.jl")
+# include("abstract.jl")
+# include("metropolis_hastings.jl")
 
 
 struct DelayedAcceptanceMetropolisHastings{EnergyType,SurrogateType,T} <:
@@ -14,8 +14,7 @@ end
 
 function sample_chain(
     s::DelayedAcceptanceMetropolisHastings;
-    x0=initialize(s.proposal)
-    )
+    x0=initialize(s.proposal))
 
     X,E = _mh_init_chain(x0, s.energy, s.length)
     F = [s.surrogate(x0)]; resize!(F, s.length) # approximate energies

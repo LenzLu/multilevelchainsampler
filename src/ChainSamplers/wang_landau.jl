@@ -1,5 +1,5 @@
-include("abstract.jl")
-include("histutils.jl")
+# include("abstract.jl")
+# include("histutils.jl")
 
 function is_flat(H::Vector, tol=0.95, p=1)
     minimum(H) ^p >= tol * mean( H .^p )
@@ -18,7 +18,7 @@ function sample_chain(
     x0=initialize(sampler.proposal),
     return_entropy=false)
 
-    X,E = _init_chain(x0, sampler.energy, sampler.chain_length)
+    X,E = [x0], [sampler.energy(x0)]
 
     # Histogram and entropy
     h = sampler.histogram
@@ -45,14 +45,13 @@ function sample_chain(
         A = min(1, exp(S[nx] - S[ny])*q_xy/q_yx)
 
         accept = rand() < A
-        X[i+1] = (accept ?  y :  x)
-        E[i+1] = (accept ? Ey : Ex)
+        X[i+1],E[i+1] = accept ?  (y,Ey) :  (x,Ex)
 
         n = accept ? ny : nx
         append!(N, n)
         H[n] += 1; S[n] += f
 
-        if is_flat(H)
+        if is_flat(H[2:end-1])
             H[:] .= 0
             f *= 0.5  # Refine the f parameter
         end

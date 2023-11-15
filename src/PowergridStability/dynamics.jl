@@ -1,4 +1,4 @@
-include("abstract.jl")
+# include("abstract.jl")
 
 using LinearAlgebra
 using Graphs
@@ -18,6 +18,19 @@ function KuramotoCoupling(ϕ::Vector, G::Graph)
     return coupling
 end
 
+#= Analytical Derivative of KuramotoCoupling
+# function KuramotoCouplingDerivative(ϕ::Vector, G::Graph)
+#     N = nv(G)
+#     coupling = zeros(eltype(ϕ), N, N)
+#     for i=1:N
+#         for j=neighbors(G, i)
+#             coupling[i,i] += cos(ϕ[i] - ϕ[j])
+#             coupling[i,j] -= cos(ϕ[i] - ϕ[j])
+#         end
+#     end
+#     return coupling
+# end
+# # only used for non-linear angle solver =#
 
 function swing_dynamics!(dₜu, u, p::PowerGrid ,t)
     N = length(u)÷2 # Unpack state
@@ -42,21 +55,6 @@ function solve_system(grid::PowerGrid,  u₀; t_final=10.0, tol=1e-6)
     #show_dynamics(solution)
     u = solution.u[end]
 end
-
-
-#= Analytical Derivative of KuramotoCoupling
-# function KuramotoCouplingDerivative(ϕ::Vector, G::Graph)
-#     N = nv(G)
-#     coupling = zeros(eltype(ϕ), N, N)
-#     for i=1:N
-#         for j=neighbors(G, i)
-#             coupling[i,i] += cos(ϕ[i] - ϕ[j])
-#             coupling[i,j] -= cos(ϕ[i] - ϕ[j])
-#         end
-#     end
-#     return coupling
-# end
-# # only used for non-linear angle solver =#
 
 
 function steady_state(grid::PowerGrid)
