@@ -46,8 +46,7 @@ end
 
 
 
-## Solver
-
+#= Solver
 function solve_system(grid::PowerGrid,  u₀; t_final=10.0, tol=1e-6)
     problem = ODEProblem(swing_dynamics!, u₀, (0.0, t_final), grid)
     solution = solve(problem, Rodas5P(); abstol=tol, reltol=tol) #TODO: Tsit schneller
@@ -55,9 +54,8 @@ function solve_system(grid::PowerGrid,  u₀; t_final=10.0, tol=1e-6)
     #show_dynamics(solution)
     u = solution.u[end]
 end
-
-
-function steady_state(grid::PowerGrid)
+=#
+function synchronous_state(grid::PowerGrid)
 
     # # Linearized angle solver
     # L = laplacian_matrix(grid.G)

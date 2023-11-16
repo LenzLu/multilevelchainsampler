@@ -1,42 +1,112 @@
 # include("abstract.jl")
 # include("dynamics.jl")
 
-using QuasiMonteCarlo
 using Statistics
+using QuasiMonteCarlo
 
+## Time evolution
 
-function stability(grid::PowerGrid, u_steady::Vector, node::Integer; n_sample=10, tol=1e-3, t_final=10., threshold=0.05)
-
-    ## Sample random perturbations
-    #U = rand(n_sample)
-    U = QuasiMonteCarlo.sample(n_sample, 1, SobolSample())
-    Δϕ = ( 2 .* U .- 1) .* π * 0.1
-
-    Δω = randn(n_sample) .* 0.0
+function nodal_deviation(
+    grid::PowerGrid, node::Int64;
+    threshold = 0.1,
+    u_fix = synchronous_state(grid),
+    perturbation = sample_perturbation(10),
+    t_final = 10.0, solver=Tsit5(), kwargs... )
 
     N = nv(grid.G)
-    ϕ_fix = u_steady[1:N]
-    failures = 0
-    for i=1:n_sample
-        u = copy(u_steady)
-        u[node]   = mod(u[node] + Δϕ[i], 2π)
-        u[node+N] = u[node+N] + Δω[i]
-        u = solve_system(grid, u; t_final, tol)
-        ϕ = u[1:N]; ω = u[N+1:2N]
+    n_sample = size(perturbation, 1)
+    tspan = (0.0,t_final)
 
-        if maximum(abs.(ϕ - ϕ_fix)) >= threshold
-            failures += 1
-        end
+    # thread parallel ODE solves
+    u_final = zeros(n_sample, length(u_fix))
+    Threads.@threads for k=1:n_sample
+        u = u_fix[:]
+        u[node]   += perturbation[k, 1]
+        u[node+N] += perturbation[k, 2]
+
+        problem = ODEProblem(swing_dynamics!, u, tspan, grid)
+        solution = solve(problem, solver; kwargs...)
+        u_final[k,:] .= solution.u[end];
     end
-    return 1.0 - failures / n_sample
+
+    ϕ,ω = u_final[node], u_final[node+N];
+    deviation = abs(ϕ - u_fix[node])
+    #            + abs(ω - u_fix[node+N])
+    #deviation .< threshold
+    return deviation
 end
 
-function stability(grid::PowerGrid; n_sample=10, tol=1e-3, t_final=10., threshold=0.05)
-    N = nv(grid.G)
-    u = steady_state(grid)
 
-    S = [stability(grid, u, i; n_sample, tol, t_final, threshold) for i=1:N]
-    # TODO: Distributed.pmap, asyncmap, @threads
+function nodal_basin_stability(
+    grid::PowerGrid, node::Int64;
+    threshold = 0.1,
+    u_fix = synchronous_state(grid),
+    t_final=10.0)
 
-    mean(S)
+    # stability function dependent on time step
+    solver = Tsit5()
+    stability(dt) = Δu -> mean(
+        nodal_deviation(grid, node;
+          threshold, u_fix, perturbation=Δu,
+          solver, t_final, adaptive=false, dt)
+    )
+
+    # multilevel monte-carlo estimator
+    levels = [1e-1, 1e-2, 1e-3, 1e-4]
+    nsamples = [100, 50,  25, 10]
+    p(nsample) = sample_perturbation(nsample)
+    q = [ stability(dt) for dt in levels ]
+
+    S = multilevel_estimator(p, q; nsamples)
+    return S
 end
+
+
+## Stability measures
+
+
+function basin_stability( grid::PowerGrid; threshold=0.1, t_final=10.0)
+    u_fix = synchronous_state(grid)
+    S = zeros( nv(grid.G) )
+    for node=1:nv(grid.G)
+        S[node] = basin_stability(grid, node; threshold, u_fix, t_final)
+    end
+    return mean(S)
+end
+
+
+#=
+function warn_runtime(msg, time)
+    if evaltime > 1.0
+        if evaltime < 60.0
+            evaltime = "$evaltime s"
+        else
+            evaltime = "$(evaltime ÷ 60.0) min"
+        end
+        @warn "Stability calculation est. $evaltime"
+    end
+end
+
+function basin_stability(grid::PowerGrid;
+    t_final = 10.0,
+    u_fix = synchronous_state(grid),
+    solver=RK4(), kwargs...)
+
+
+    # if verbose
+    #     u = u_fix .+ randn(length(u_fix))
+    #     problem = ODEProblem(swing_dynamics!, u, (0,t_final), grid)
+    #     solvetime = @elapsed solve(problem, solver; kwargs... )
+    #     evaltime = N * n_sample * solvetime
+    #     warn_runtime(evaltime)
+    # end
+
+
+    S = zeros(size(perturbation,1))
+    for i=1:nv(grid.G)
+        S[i] = nodal_basin_stability(grid, i;
+                t_final, u_fix, perturbation, solver, kwargs...)
+    end
+    return mean(S)
+end
+=#

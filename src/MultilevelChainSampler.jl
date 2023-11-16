@@ -3,6 +3,7 @@ module MultilevelChainSampler
 include("ChainSamplers/all.jl")
 include("NetworkEnsembles/all.jl")
 include("PowergridStability/all.jl")
+include("utils/all.jl")
 
 export ProposalGenerator, initialize, propose!, transition, transitions
 export ErdoesRenyiSampler #, WattsStrogatzSampler, ...
@@ -12,7 +13,10 @@ export MetropolisHastings,
        DelayedAcceptanceMetropolisHastings,
        MultilevelMetropolisHastings
 
+export PowerGrid, PowerGridEnsemble
+export swing_dynamics!, synchronous_state
+export nodal_basin_stability, basin_stability
 
-export PowerGrid, PowerGridEnsemble, swing_dynamics!
+export multilevel_estimator, adaptive_multilevel_estimator
 
 end

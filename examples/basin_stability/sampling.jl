@@ -1,3 +1,4 @@
+#=
 include("../../src/all.jl")
 
 using Plots
@@ -32,3 +33,4 @@ end
 chain_length = 10
 sampler = MetropolisHastings(x -> stability(x), gridsampler, chain_length)
 create_plots(sampler, "mh")
+=#
