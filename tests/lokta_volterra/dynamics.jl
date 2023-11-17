@@ -21,10 +21,18 @@ function sample_perturbation(n::Int64)
     return δu
 end
 
-function deviation(δu; solver=Euler(), adaptive=false, dt=0.1, kwargs... )
-    problem = ODEProblem(dynamics!, u₀ .+ δu, (0, t_final), p)
+function deviation(δu; solver=Euler(), dt=0.1, adaptive=false, kwargs... )
+    problem = ODEProblem(lokta_volterra!, u₀ .+ δu, (0, t_final), p)
     solution = solve( problem, solver; adaptive, dt, kwargs... )
     hcat(solution.u ... )
+end
+
+function quantity_of_interest(δu, dt; solver=Euler(), kwargs...)
+    q = zeros(size(δu, 1))
+    for i=1:length(q)
+        q[i] = deviation( δu[i,:]; solver, dt, kwargs...)[1,end]
+    end
+    return q
 end
 
 

@@ -34,7 +34,7 @@ end
 
 title!("Lokta Volterra Trajectories")
 imgdir = "$(@__DIR__)/imgs"
-savefig("$imgdir/loktavolterra.png")
+savefig("$imgdir/trajectory.png")
 display(Plots.current())
 
 #=
