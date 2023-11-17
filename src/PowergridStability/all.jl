@@ -1,4 +1,12 @@
-include("abstract.jl")
+using Graphs
+
+struct PowerGrid
+    G::Graph
+    W::Vector
+    K::Real
+    α::Real
+end
+
 include("gridsampler.jl")
 include("dynamics.jl")
 #include("display_gplots.jl")

@@ -7,13 +7,18 @@ using MultilevelChainSampler
 clearconsole(); println(repeat("=",80)... )
 println("Single node connected to clique ")
 
-G = complete_graph(9)
-add_vertex!(G); add_edge!(G, nv(G), 1)
+K = 9.0; a = 0.5
+for N = 2:2:10
+    println("N=$N nodes")
 
-W = ones(nv(G)); W[1:nv(G)÷2] .= -1
-grid = PowerGrid(G,W,1.0,1.0)
+    G = complete_graph(N-1)
+    add_vertex!(G); add_edge!(G, N, 1)
 
-t = @elapsed S = nodal_basin_stability(grid, nv(G))
-println("Stability computation took $t seconds.")
+    W = ones(nv(G)); W[1:nv(G)÷2] .= -1
+    grid = PowerGrid(G,W,K,a)
 
-println("Stability $S")
+    @time S,_ = nodal_basin_stability(grid, 1 )
+    #println("Stability computation took $t seconds.")
+
+    println("Stability $S")
+end

@@ -32,7 +32,7 @@ function nodal_deviation(
     ϕ,ω = u_final[node], u_final[node+N];
     deviation = abs(ϕ - u_fix[node])
     #            + abs(ω - u_fix[node+N])
-    #deviation .< threshold
+    deviation .< threshold
     return deviation
 end
 
@@ -41,23 +41,20 @@ function nodal_basin_stability(
     grid::PowerGrid, node::Int64;
     threshold = 0.1,
     u_fix = synchronous_state(grid),
-    t_final=10.0)
+    t_final = 10.0,
+    h0=0.1, m=0.5, nsamples=2 .^ [4:-1:1 ... ] )
 
     # stability function dependent on time step
     solver = Tsit5()
-    stability(dt) = Δu -> mean(
+    stability(Δu,dt) = mean(
         nodal_deviation(grid, node;
           threshold, u_fix, perturbation=Δu,
           solver, t_final, adaptive=false, dt)
     )
 
     # multilevel monte-carlo estimator
-    levels = [1e-1, 1e-2, 1e-3, 1e-4]
-    nsamples = [100, 50,  25, 10]
-    p(nsample) = sample_perturbation(nsample)
-    q = [ stability(dt) for dt in levels ]
-
-    S = multilevel_estimator(p, q; nsamples)
+    #nsamples = [100, 50,  25, 10]
+    S = multilevel_estimator(sample_perturbation, stability, nsamples; h0, m)
     return S
 end
 

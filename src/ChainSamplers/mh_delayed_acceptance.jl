@@ -1,6 +1,3 @@
-# include("abstract.jl")
-# include("metropolis_hastings.jl")
-
 
 struct DelayedAcceptanceMetropolisHastings{EnergyType,SurrogateType,T} <:
     ChainSampler{T} where {EnergyType<:Function, SurrogateType<:Function}

@@ -1,7 +1,3 @@
-# include("abstract.jl")
-# include("metropolis_hastings.jl")
-
-const FunctionIterable = Union{Vector{<:Function}, Tuple{Vararg{Function}}}
 
 struct MultilevelMetropolisHastings{EnergyType,SurrogateType,T} <:
     ChainSampler{T} where {EnergyType<:Function, SurrogateType<:FunctionIterable}

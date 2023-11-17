@@ -12,8 +12,8 @@ end
 function multilevel_estimator(
     sampler::Function,
     quantity::Function,
-    nsamples::Vector{Int64} = [64,32,16,8];
-    h0 = 0.1, m=0.75 )
+    nsamples::Vector{Int64} = [128,64,32,16,8];
+    h0 = 0.1, m=0.5 )
 
     # Coursest level
     x = sampler(nsamples[1])
@@ -24,8 +24,9 @@ function multilevel_estimator(
     # Iterate over higher levels
     for l in 2:length(nsamples)
         x = sampler(nsamples[l])
-        Qₗ   = quantity(x, h0*m^(l-1))
-        Qₗ₋₁ = quantity(x, h0*m^(l-2))
+        hₗ, hₗ₋₁ = @. h0*m^( [l, l-1] -1)
+        Qₗ   = quantity(x, hₗ  )
+        Qₗ₋₁ = quantity(x, hₗ₋₁)
         Y  += mean(Qₗ .- Qₗ₋₁)
         s² += std( Qₗ .- Qₗ₋₁)^2
     end
@@ -84,5 +85,5 @@ function adaptive_multilevel_estimator(
         end
     end
 
-    return sum(μ) #, sqrt( sum(σ.^2) )
+    return sum(μ) , sqrt( sum(σ.^2) )
 end

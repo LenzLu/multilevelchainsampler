@@ -1,4 +1,4 @@
-# include("abstract.jl")
+
 
 struct MetropolisHastings{EnergyType,T} <: ChainSampler{T} where {EnergyType <: Function}
     energy::EnergyType
