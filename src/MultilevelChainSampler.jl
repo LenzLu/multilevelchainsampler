@@ -19,4 +19,6 @@ export nodal_basin_stability, basin_stability
 
 export multilevel_estimator, adaptive_multilevel_estimator
 
+export sensitivity
+
 end
