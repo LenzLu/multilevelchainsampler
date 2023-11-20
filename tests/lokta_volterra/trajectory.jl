@@ -1,8 +1,6 @@
-using Plots
-using StatsPlots
-
 include("dynamics.jl")
 
+using Plots
 
 v0 = deviation(zeros(2); solver=RK4(), dt=1e-3)
 q0 = v0[1, end]

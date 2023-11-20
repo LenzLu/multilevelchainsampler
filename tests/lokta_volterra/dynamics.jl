@@ -2,9 +2,6 @@ using OrdinaryDiffEq
 using Statistics
 #using NonlinearSolve
 
-using Revise
-using MultilevelChainSampler
-
 function lokta_volterra!(dₜu, u, p, t)
     a,b,c,d = p
     dₜu[1] =  a * u[1]  - b * u[1]*u[2]
