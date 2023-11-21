@@ -1,6 +1,13 @@
-#=using Test
+using Test
 
-@testset "trajectory"  begin include("trajectory.jl")   end
-@testset "pushforward" begin include("pushforward.jl")  end
-@testset "rates"       begin include("rates.jl")        end
-=#
+@testset "trajectory"  begin
+    include("deviation/trajectory.jl")
+end
+
+@testset "pushforward" begin
+    include("deviation/pushforward.jl")
+end
+
+@testset "rates" begin
+    include("convergence/rates.jl")
+end

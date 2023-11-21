@@ -1,9 +1,11 @@
-include("dynamics.jl")
+include("../dynamics.jl")
 
 using Plots
 using StatsPlots
 using Revise
 using MultilevelChainSampler
+imgdir = "$(@__DIR__)/../imgs"
+
 
 blend(c1, c2, t) = c1 .* (1-t) .+ c2 .* t
 
@@ -17,7 +19,6 @@ for (i,dt) = enumerate(timesteps)
     stephist!(q, alpha=.2, normalized=true, label="dt=$dt", width=4; color)
 end
 title!("Distribution mapping")
-imgdir = "$(@__DIR__)/imgs"
 savefig("$imgdir/distributions.png")
 display(Plots.current())
 
