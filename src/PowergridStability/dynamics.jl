@@ -7,30 +7,17 @@ using OrdinaryDiffEq
 
 ## Dynamics
 
-function KuramotoCoupling(ϕ::Vector, G::Graph)
+function kuramoto_coupling(ϕ::Vector, G::Graph)
     N = nv(G)
     coupling = zeros(eltype(ϕ), N)
     for i=1:N
         for j=neighbors(G, i)
-            coupling[i] += sin(ϕ[i] - ϕ[j])
+            coupling[i] += sin(ϕ[j] - ϕ[i])
         end
     end
     return coupling
 end
 
-#= Analytical Derivative of KuramotoCoupling
-# function KuramotoCouplingDerivative(ϕ::Vector, G::Graph)
-#     N = nv(G)
-#     coupling = zeros(eltype(ϕ), N, N)
-#     for i=1:N
-#         for j=neighbors(G, i)
-#             coupling[i,i] += cos(ϕ[i] - ϕ[j])
-#             coupling[i,j] -= cos(ϕ[i] - ϕ[j])
-#         end
-#     end
-#     return coupling
-# end
-# # only used for non-linear angle solver =#
 
 function swing_dynamics!(dₜu, u, p::PowerGrid ,t)
     N = length(u)÷2 # Unpack state
@@ -38,23 +25,39 @@ function swing_dynamics!(dₜu, u, p::PowerGrid ,t)
 
     # Swing equation
     dₜϕ = ω
-    dₜω = p.W .- p.α .* ω .- p.K .* KuramotoCoupling(ϕ, p.G)
+    dₜω = p.W .- p.α .* ω .+ p.K .* kuramoto_coupling(ϕ, p.G)
 
-    dₜu[1:N] = dₜϕ; dₜu[N+1:2N] =  dₜω  # pack vector
+    dₜu[1:N] .= dₜϕ; dₜu[N+1:2N] .=  dₜω  # pack vector
     return dₜu
 end
 
 
+#Analytical Derivative of KuramotoCoupling
+function kuramoto_coupling_derivative(ϕ::Vector, G::Graph)
+     N = nv(G)
+     J_coupling = zeros(eltype(ϕ), N, N)
+     for i=1:N
+         for j=neighbors(G, i)
+             J_coupling[i,i] -= cos(ϕ[j] - ϕ[i])
+             J_coupling[i,j] += cos(ϕ[j] - ϕ[i])
+         end
+     end
+     return J_coupling
+ end
 
-#= Solver
-function solve_system(grid::PowerGrid,  u₀; t_final=10.0, tol=1e-6)
-    problem = ODEProblem(swing_dynamics!, u₀, (0.0, t_final), grid)
-    solution = solve(problem, Rodas5P(); abstol=tol, reltol=tol) #TODO: Tsit schneller
+function swing_dynamics_derivative!(J, u, p::PowerGrid ,t)
+    N = length(u)÷2 # Unpack state
+    ϕ = u[1:N]; ω = u[N+1:2N]
 
-    #show_dynamics(solution)
-    u = solution.u[end]
+    # Block definition of Jacobian
+    J[   1:N,    1:N] .= zeros(N,N)
+    J[   1:N, N+1:2N] .= I(N)
+    J[N+1:2N,    1:N] .= p.K .* kuramoto_coupling_derivative(ϕ, p.G)
+    J[N+1:2N, N+1:2N] .= - p.α .* I(N);
+
 end
-=#
+
+# Steady state
 function synchronous_state(grid::PowerGrid)
 
     # # Linearized angle solver
@@ -76,6 +79,8 @@ function synchronous_state(grid::PowerGrid)
     # ω = zeros(eltype(ϕ), length(ϕ))
     # u = [ϕ..., ω... ]
 
+    N = nv(grid.G)
+
     # Nonlinear dynamics solver
     function f(u,p)
         dₜu = zeros(eltype(u), length(u))
@@ -83,10 +88,23 @@ function synchronous_state(grid::PowerGrid)
         dₜu[1:N] .-= mean(dₜu[1:N])
         return dₜu[2:end]
     end
-    N = nv(grid.G); u = zeros(2N)
-    problem = NonlinearProblem(f, u, grid)
-    solution = solve(problem, NewtonRaphson())
-    u = solution.u
 
-    return u
+    for i=1:10
+        u = zeros(2N)
+        problem = NonlinearProblem(f, u, grid)
+        solution = solve(problem, NewtonRaphson())
+        u = solution.u
+        if is_stable(grid, u) return u end
+    end
+    @warn "Synchronous state not found!"
+end
+
+function is_stable(grid::PowerGrid, u_fix::Vector)
+    @assert length(u_fix) == 2*nv(grid.G)
+    N = nv(grid.G)
+
+    J = zeros(2N,2N)
+    swing_dynamics_derivative!(J,u_fix,grid,0.0)
+    λ = real.( eigen(J).values )
+    return minimum(λ) <= 0.0
 end

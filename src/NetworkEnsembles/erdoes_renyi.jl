@@ -14,19 +14,25 @@ end
 
 function initialize(S::ErdoesRenyiSampler)
     G = erdos_renyi(S.N, S.p)
-    #= while !is_connected(G)
+    while !is_connected(G) #TODO: check if p ≧ log(N)/N
         G = erdos_renyi(S.N, S.p)
-    end =#
+    end
     return G
 end
 
 function propose!(S::ErdoesRenyiSampler, G::Graph)
+    @assert is_connected(G) "only for connected graphs"
+
     finished = false
     while !finished
         u,v = choose_node_pair(G)
         if has_edge(G, u, v)
             if rem_edge!(G, u, v)
-                finished = true
+                if is_connected(G)
+                    finished = true
+                else
+                    add_edge!(G,u,v)
+                end
             end
         else
             if rand() < S.p

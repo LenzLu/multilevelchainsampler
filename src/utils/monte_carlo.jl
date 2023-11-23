@@ -34,7 +34,31 @@ function multilevel_estimator(
     return Y, sqrt(s²)
 end
 
+function multilevel_estimator(
+    sampler::Function,
+    quantities::FunctionIterable;
+    nsamples::Vector{Int64} = 4 .^ [length(quantities):-1:1 ... ] )
+    @assert length(nsamples) == length(quantities) "sampling levels incoherent, give $(length(quantities)) integers"
 
+    # Coursest level
+    x = sampler(nsamples[1])
+    Q₀ = quantities[1](x)
+    Y  = mean(Q₀)
+    s² = std(Q₀)^2
+
+    # Iterate over higher levels
+    for l in 2:length(nsamples)
+        x = sampler(nsamples[l])
+        Qₗ   = quantities[l-1](x)
+        Qₗ₋₁ = quantities[l](x)
+        Y  += mean(Qₗ .- Qₗ₋₁)
+        s² += std( Qₗ .- Qₗ₋₁)^2
+    end
+
+    return Y, sqrt(s²)
+end
+
+#=
 function adaptive_multilevel_estimator(
     sampler::Function, quantity::Function;
     h0 = 1.0, m = 0.5,
@@ -87,3 +111,4 @@ function adaptive_multilevel_estimator(
 
     return sum(μ) , sqrt( sum(σ.^2) )
 end
+=#

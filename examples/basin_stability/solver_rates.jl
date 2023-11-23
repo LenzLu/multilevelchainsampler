@@ -18,7 +18,7 @@ function fit_rate(X,Y)
 end
 
 
-N=8; K = 5.0; a = 0.5
+N=24; K = 1.0; a = 0.5
 G = complete_graph(N)
 W = ones(nv(G)); W[1:nv(G)÷2] .= -1
 g = PowerGrid(G,W,K,a)
@@ -31,7 +31,7 @@ problem = ODEProblem(swing_dynamics!, u₀, timespan, g)
 
 # Plot high resolution dynamics
 println("Solving with high resolution...")
-timed = @elapsed fine_solution = solve(problem, Rodas5(), abstol=1e-19, reltol=1e-19);
+timed = @elapsed fine_solution = solve(problem, Rodas5(), abstol=1e-12, reltol=1e-12);
 print(); println("High resolution finished in $timed seconds.")
 t_fine = fine_solution.t
 u_fine = fine_solution.u[end]
@@ -61,7 +61,7 @@ end
 
 solvers = [Euler(), ImplicitEuler(), RK4(), Tsit5()]
 kwargs = (; adaptive=false)
-timesteps = 0.1 .^ [ 0:.07:4 ... ]
+timesteps = 0.1 .^ [ .1:.04:4 ... ]
 errors = zeros(length(solvers), length(timesteps))
 costs  = zeros(length(solvers), length(timesteps))
 for (i,solver) in enumerate(solvers)
@@ -75,13 +75,15 @@ end
 plot_rates(solvers, timesteps, errors; labels="SOLVER, α=RATE")
 ylabel!("Relative error")
 title!("Fixed-step Solvers - Convergence")
-savefig("$imgdir/fixed_error.png")
+plot!(legend=:topleft)
+plot!([extrema(timesteps)... ], repeat([1e-12],2), color="black", linestyle=:dash, label="")
+savefig("$imgdir/solvers_fixed_error.png")
 display(Plots.current())
 
 plot_rates(solvers, timesteps, costs; labels="SOLVER, γ=RATE", ignore=3)
 ylabel!("Evaluation time")
 title!("Fixed-step Solvers - Costs")
-savefig("$imgdir/fixed_costs.png")
+savefig("$imgdir/solvers_fixed_costs.png")
 display(Plots.current())
 
 
@@ -89,12 +91,12 @@ display(Plots.current())
 
 solvers = [RK4(), Tsit5(), Rodas3(), Rodas5()]
 kwargs = (; adaptive=true)
-tolerances = 0.1 .^ [ 0:.05:10 ... ]
+tolerances = 0.1 .^ [ 0:.05:7 ... ]
 errors = zeros(length(solvers), length(tolerances))
 costs  = zeros(length(solvers), length(tolerances))
 for (i,solver) in enumerate(solvers)
     for (j,h) in enumerate(tolerances)
-        costs[i,j] = @elapsed solution = solve(problem, solver; reltol=h, abstol=h, kwargs...)
+        costs[i,j] = @elapsed solution = solve(problem, solver; reltol=h, abstol=h,  kwargs...)
         u = solution.u[end]
         errors[i,j] = abs(u[1] - u_fine[1]) / abs(u_fine[1])
     end
@@ -103,11 +105,12 @@ end
 plot_rates(solvers, tolerances, errors; labels="SOLVER, α=RATE")
 ylabel!("Relative error")
 title!("Adaptive solvers - Convergence")
-savefig("$imgdir/adaptive_error.png")
+plot!(legend=:topleft)
+savefig("$imgdir/solvers_adaptive_error.png")
 display(Plots.current())
 
 plot_rates(solvers, tolerances, costs; labels="SOLVER, γ=RATE", ignore=3)
 ylabel!("Evaluation time")
 title!("Adaptive solvers - Costs")
-savefig("$imgdir/adaptive_costs.png")
+savefig("$imgdir/solvers_adaptive_costs.png")
 display(Plots.current())
