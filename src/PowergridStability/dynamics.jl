@@ -50,6 +50,7 @@ function swing_dynamics_derivative!(J, u, p::PowerGrid ,t)
     ϕ = u[1:N]; ω = u[N+1:2N]
 
     # Block definition of Jacobian
+    J = reshape(J, 2N, 2N)
     J[   1:N,    1:N] .= zeros(N,N)
     J[   1:N, N+1:2N] .= I(N)
     J[N+1:2N,    1:N] .= p.K .* kuramoto_coupling_derivative(ϕ, p.G)

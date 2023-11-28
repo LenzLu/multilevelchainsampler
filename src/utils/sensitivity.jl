@@ -21,6 +21,20 @@ function sensitivity(u₀, f, ∂ᵤf)
     return v₀, F
 end
 
-# Caveat: Inplace evaluation tricky since ∂ᵤf! would change state
+function sensitivity_inplace(u₀, f!, ∂ᵤf!)
+    n = length(u₀)
+    v₀ = [u₀ ..., I(n)... ]
+    println("v₀ ", length(v₀))
+
+    function F!(dv, v,p,t)
+        u = v[1:n]
+        G = reshape(v[n+1:n+n^2], n,n)
+        J = zeros(eltype(v), n,n)
+        f!( dv[1:n], u,p,t )
+        ∂ᵤf!( J, u,p,t)
+        dv[n+1:n+n^2] .= reshape( G * J, n^2)
+    end
+    return v₀, F!
+end
 
 # TODO: evtl. consider ∂ₜf, ∂ₚf also

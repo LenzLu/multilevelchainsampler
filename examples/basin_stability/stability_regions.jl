@@ -40,6 +40,15 @@ savefig("$imgdir/stability_K2.png")
 display(Plots.current())
 
 
+K = 2.0; a = 0.5
+W = ones(8); W[5:end] .= -1
+g = PowerGrid(complete_graph(8), W, K, a)
+
+plot_grid_stability(g)
+savefig("$imgdir/stability_K8.png")
+display(Plots.current())
+
+
 
 N=19; K = 9.0; a = 0.5
 ensemble = PowerGridEnsemble(ErdoesRenyiSampler(N,0.15),10,K,a)
@@ -48,6 +57,8 @@ plot_grid_stability(g)
 
 propose!(ensemble, g)
 plot_grid_stability(g)
+savefig("$imgdir/stability_ER19.png")
+display(Plots.current())
 
 timed_single = @elapsed nodal_basin_stability(g, 1)
 timed_total = @elapsed basin_stability(g)
