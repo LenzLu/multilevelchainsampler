@@ -1,44 +1,55 @@
 function analyse_nodal_stability(
-    g::PowerGrid, node=1, n=256; t_final=120.0, tolerance=0.1,
+    g::PowerGrid, node::Int64=1, n=256; t_final=120.0, tolerance=0.1,
     interactive = true)
+    N = nv(g.grid)
 
     δx = sample_perturbations(1, n)
-    S = basin_stability(g, [1], δx; t_final, tolerance)
-    U = .! S
+    println("Calculating basin stability ")
+    @time S = basin_stability(g, [node], δx; t_final, tolerance)
+    
+    fig = Figure(aspect=0.3); 
 
-    fig = Figure(aspect=0.6); ax = Axis(fig[1,1])
-    
-    δϕ, δω = δx; N = nv(g.grid)
-    scatter!(ax, δϕ[S], δω[S], color=:green, label="stable")
-    scatter!(ax, δϕ[U], δω[U], color=:tomato, label="unstable")
-    axislegend(ax)
-    
+    ax_graph = Axis(fig[1,1])
+    graphplot!(ax_graph, g.grid, nlabels=map(string, 1:N))
+
+    ax_pert = Axis(fig[1,2])
+         
+    U =.! S 
+    δϕ, δω = δx
+    scatter!(ax_pert, δϕ[S], δω[S], color=:green, label="stable")
+    scatter!(ax_pert, δϕ[U], δω[U], color=:tomato, label="unstable")
+    axislegend(ax_pert)
+        
     s = mean(S)
-    ax.xlabel = L"Phase perturbation $δϕ$"
-    ax.ylabel = L"Velocity perturbation $δω$"
-    ax.title = "Stability of node $node"
-    ax.subtitle = L"$ S_1 \approx %$s \quad (n = %$n) $ "
+    ax_pert.xlabel = L"Phase perturbation $δϕ$"
+    ax_pert.ylabel = L"Velocity perturbation $δω$"
+    ax_pert.title = "Stability of node $node / $N "
+    ax_pert.subtitle = L"$ S_1(%$node) \approx %$s \quad (n = %$n) $ "
+    
 
     if interactive
-        deregister_interaction!(ax, :rectanglezoom)
+        deregister_interaction!(ax_pert, :rectanglezoom)
         
-        function plot_perturbation(perturbation)
-            empty!(ax_traj)
-            a = g.damping[node]; K = round(mean( g.coupling ), digits=3)
-            #text!( ax_traj, L"$\alpha = %$a, K = %$K $", pos=(0.0, 0.9*tolerance), space=:data )
+        ax_traj = Axis(fig[1,3])
+        
+        
+        function plot_trajectories(perturbation)
+            empty!(ax_traj); 
+            
             ax_traj.xlabel = L"Time $t$"
-            ax_traj.ylabel = L"Frequency $ω(t)$"
-            ax_traj.subtitle = L"$δϕ = %$(round(perturbation[1],digits=5))$ , $δω = %$(round(perturbation[2],digits=5)) $" 
-
-
+            ax_traj.ylabel = L"Frequency $ω(t)"
+            ax_traj.subtitle = L"$δϕ = %$(round(perturbation[node],digits=5))$ , $δω = %$(round(perturbation[node+1],digits=5)) $" 
+            
             xlims!(ax_traj, [-.01 * t_final, t_final] )
-            ylims!(ax_traj, [-10 * tolerance, 10*tolerance])
+            #ylims!(ax_traj, [-10 * tolerance, 10*tolerance])
             lines!(ax_traj,  [0, t_final], repeat([tolerance],2), linestyle=:dash, color=:black)
             lines!(ax_traj,  [0, t_final], repeat([-tolerance],2), linestyle=:dash, color=:black)
                     
             u0 = g.syncstate .+ perturbation
             problem = ODEProblem(swing_dynamics!, u0, (0, t_final), g)
-            solution = solve(problem, RK4(); adaptive=true, abstol=0.1, reltol=0.1)
+            solution = solve(problem, Rodas5(); adaptive=true, abstol=1e-6, reltol=1e-6)
+            
+            #solution = solve(problem, RK4(); adaptive=true, abstol=0.1, reltol=0.1)
             x = [solution.t ... ]
             for i = 1:N
                 y = [solution.u[t][i+N] for t=1:length(x) ]
@@ -46,23 +57,56 @@ function analyse_nodal_stability(
             end
         end
 
-        ax_traj = Axis(fig[1,2])
-        plot_perturbation(zeros(2N))
+        plot_trajectories(zeros(2N))
     
-        marker = scatter!(ax, [Point2f(0,0)], marker=:xcross, color=:black)
-        register_interaction!(ax, :click) do event::MouseEvent, axis   
+        marker = scatter!(ax_pert, [Point2f(0,0)], marker=:xcross, color=:black)
+        register_interaction!(ax_pert, :click) do event::MouseEvent, axis   
             if event.type == MouseEventTypes.leftclick 
                 pos = mouseposition(axis)
                 marker[1][] = [pos]
 
                 perturbation = zeros(2N)
                 perturbation[[node, node+N]]   .= pos
-                plot_perturbation(perturbation)
+                plot_trajectories(perturbation)
                 
                 sleep(0.01)
             end
         end
     
+    end
+    return fig
+end
+
+function analyse_network(g, interactive=true)
+    fig = Figure(aspect=0.6); 
+    ax = Axis(fig[1,1])
+    
+    empty!(ax)
+    graphplot!(ax, g.grid, nlabels=map(string, 1:N))
+    
+    if interactive 
+        ax_traj = Axis(fig[1,2])
+        
+        empty!(ax_traj)
+        ax_traj.xlabel = L"Time $t$"
+        ax_traj.ylabel = L"Frequency $ω(t)"
+        
+        t_final = 120.0; tolerance = 0.05
+        xlims!(ax_traj, [-.01 * t_final, t_final] )
+        ylims!(ax_traj, [-10 * tolerance, 10*tolerance])
+        lines!(ax_traj,  [0, t_final], repeat([tolerance],2), linestyle=:dot, color=:black)
+        lines!(ax_traj,  [0, t_final], repeat([-tolerance],2), linestyle=:dot, color=:black)
+                
+        u0 = g.syncstate .+ rand(2N) 
+        problem = ODEProblem(swing_dynamics!, u0, (0, t_final), g)
+        solution = solve(problem, Rodas5(); adaptive=true, abstol=1e-6, reltol=1e-6)
+        
+        #solution = solve(problem, RK4(); adaptive=true, abstol=0.1, reltol=0.1)
+        x = [solution.t ... ]
+        for i = 1:N
+            y = [solution.u[t][i+N] for t=1:length(x) ]
+            l = lines!(ax_traj, x, y, label=L"$\omega_{%$i}$")
+        end
     end
     return fig
 end

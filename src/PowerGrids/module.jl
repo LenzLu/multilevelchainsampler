@@ -18,7 +18,9 @@ include("stability.jl")
 include("visualize.jl")
 
 export PowerGrid
+export stable
 export basin_stability
 export analyse_nodal_stability
+export analyse_network
 #end
 

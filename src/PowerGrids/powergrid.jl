@@ -1,17 +1,19 @@
+# TODO: templates
+
 struct PowerGrid
-    grid::Graph
-    power::Vector 
-    coupling::Vector
-    damping::Vector
-    syncstate::Vector
+    grid
+    power
+    coupling 
+    damping
+    syncstate
 end
 
-
-function PowerGrid(grid::Graph, power::Vector, damping::AbstractFloat, coupling::AbstractFloat) 
-    dtype = Float64
-    power = convert(Vector{dtype}, power)
-    damping = convert(Vector{dtype}, repeat([damping], nv(grid)))
-    coupling = convert(Vector{dtype}, repeat([coupling], ne(grid)))
+function PowerGrid(grid, power, coupling=1.0, damping=0.1) 
     syncstate = synchronous_state(grid, power, coupling, damping)
-    PowerGrid( grid, power, coupling, damping, syncstate )
+    g =PowerGrid( grid, power, coupling, damping, syncstate )
+    
+
+    if !stable(g, randn(2*nv(grid))) 
+        @warn "Synchronous state not found!" end
+    return g
 end

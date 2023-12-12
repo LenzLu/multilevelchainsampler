@@ -1,22 +1,17 @@
-#=
-using Statistics
-using IterTools
-using OrdinaryDiffEq
-using QuasiMonteCarlo
-=#
 
-function deviation(g::PowerGrid, perturbation::Vector; t_final=120.0)
+function stable(g::PowerGrid, perturbation::Vector; t_final=120.0, tolerance=0.1)
     u0 = g.syncstate .+ perturbation
     N = length(u0)÷2 
     problem = ODEProblem(swing_dynamics!, u0, (0, t_final), g)
-    solution = solve(problem, RK4(); adaptive=true, abstol=0.1, reltol=0.1)
+    
+    max_deviation = 3 * max( tolerance, maximum(abs.(perturbation)) ) 
+    desynced(u,t,integrator) = ( maximum(abs.(u[N+1:2N] .- g.syncstate[N+1:2N])) > max_deviation )
+    callback = ContinuousCallback(desynced, terminate!)
+    
+    solution = solve(problem, RK4(); adaptive=true, abstol=1e-2, reltol=1e-1, callback)
     u_final = solution.u[end]
 
-    return ( u_final[N+1:end] .- g.syncstate[N+1:end] )
-end
-
-function stable(g::PowerGrid, perturbation::Vector; t_final=120.0, tolerance=0.1)
-    δu = deviation(g, perturbation; t_final)
+    δu = ( u_final[N+1:end] .- g.syncstate[N+1:end] )
     S = maximum(abs.(δu)) < tolerance
     return S
 end
@@ -36,7 +31,8 @@ function basin_stability(g::PowerGrid, m::Int64, n::Int64=10; t_final=120.0, tol
 
     δx=sample_perturbations(length(J), n)
     for (k,J) = enumerate(subsets(1:N, m))
-        S[k] .= basin_stability(g, J, δx; t_final, tolerance)
+        S_J = basin_stability(g, J, δx; t_final, tolerance)
+        S[k] = mean(S_J)
     end
     return mean(S)
 end
