@@ -23,5 +23,7 @@ docs/site/
 # environment.
 Manifest.toml
 
-# Test image output may vary, do not reupload this for every test. 
+# Outputs may vary, do not reupload this for every run. 
 tests/*/imgs
+apps/*/data
+apps/*/imgs
